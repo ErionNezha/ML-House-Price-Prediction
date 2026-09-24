@@ -1,0 +1,114 @@
+<!-- Created by Erion Nezha — © 2026 All rights reserved -->
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏠 Parashikimi i Çmimit të Shtëpisë — Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0e14;color:#e6e6e6;font-family:'Segoe UI',system-ui,sans-serif;padding:24px;max-width:980px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:6px}
+.sub{color:#9fb3c8;font-size:.92rem;margin-bottom:18px;line-height:1.6}
+.card{background:#0d1420;border:1px solid #ffffff14;border-radius:12px;padding:20px;margin-bottom:18px}
+.card h2{font-size:1.05rem;margin-bottom:12px;color:#7fdbff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.field label{display:block;font-size:.82rem;color:#9fb3c8;margin-bottom:6px}
+.field input[type=range]{width:100%;accent-color:#00d4ff}
+.field .val{font-size:.9rem;color:#fff;font-weight:600}
+.field input[type=number]{width:100%;background:#0a0e14;border:1px solid #ffffff22;border-radius:8px;color:#fff;padding:10px}
+.big{font-size:2.2rem;font-weight:800;color:#4ade80;margin:10px 0}
+.mid{font-size:.9rem;color:#9fb3c8;line-height:1.6}
+canvas{width:100%;background:#0a0e14;border:1px solid #ffffff14;border-radius:8px}
+.pipe{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pipe .stg{flex:1;min-width:120px;background:#0a0e14;border:1px solid #00d4ff44;border-radius:8px;padding:10px;text-align:center;font-size:.78rem}
+.pipe .stg b{display:block;color:#7fdbff;margin-bottom:4px}
+.note{font-size:.82rem;color:#5c6b7f;margin-top:10px;line-height:1.6}
+footer{text-align:center;padding:18px;color:#5c6b7f;font-size:.85rem}
+footer strong{color:#9fb3c8}
+</style>
+</head>
+<body>
+<!-- Created by Erion Nezha — © 2026 All rights reserved -->
+<h1>🏠 Parashikimi i Çmimit të Shtëpisë</h1>
+<p class="sub">Demo ndërvepruese e projektit Machine Learning (Kaggle: <i>House Prices — Advanced Regression Techniques</i>). Notebook-u origjinal kalon 5 faza: <b>Analiza e të Dhënave → Feature Engineering → Përzgjedhja e Feature-eve → Ndërtimi i Modelit → Deploy</b>. Formula më poshtë është një regresion i thjeshtuar log-linear, i përshtatur me të dhënat reale të train.csv (1,460 shtëpi, R² ≈ 0.81): <i>log(çmimi) = 7.857 + 0.481·ln(GrLivArea) + 0.109·OverallQual − 0.0025·mosha − 0.009·TotRms + 0.088·GarageCars</i>. Lëviz slider-at dhe shiko çmimin e parashikuar!</p>
+
+<div class="card">
+<h2>🏡 Vendos karakteristikat e shtëpisë</h2>
+<div class="grid">
+<div class="field"><label>Sipërfaqja e banimit (sq ft) — <span class="val" id="v-area">1800</span></label><input type="range" id="area" min="600" max="5000" value="1800" oninput="upd()"></div>
+<div class="field"><label>Cilësia e përgjithshme (1–10) — <span class="val" id="v-qual">6</span></label><input type="range" id="qual" min="1" max="10" value="6" oninput="upd()"></div>
+<div class="field"><label>Viti i ndërtimit — <span class="val" id="v-year">1990</span></label><input type="range" id="year" min="1900" max="2010" value="1990" oninput="upd()"></div>
+<div class="field"><label>Dhoma gjithsej mbi tokë — <span class="val" id="v-rooms">7</span></label><input type="range" id="rooms" min="2" max="15" value="7" oninput="upd()"></div>
+<div class="field"><label>Vende garazhi — <span class="val" id="v-garage">2</span></label><input type="range" id="garage" min="0" max="4" value="2" oninput="upd()"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>💰 Çmimi i parashikuar</h2>
+<div class="big" id="price">—</div>
+<div class="mid" id="detail"></div>
+<canvas id="chart" width="900" height="260" style="margin-top:14px"></canvas>
+<p class="note">Grafiku krahason parashikimin tënd me çmimin median të dataset-it ($163,000). Modeli origjinal në notebook përdor Lasso për përzgjedhjen e feature-eve më të rëndësishme (OverallQual, GrLivArea, GarageCars dalin kryesoret) pas një feature engineering të plotë: missing values → variabla temporale → rare labels → log-transform → MinMax scaling.</p>
+</div>
+
+<div class="card">
+<h2>🔁 Cikli i plotë Data Science (nga notebook-u)</h2>
+<div class="pipe">
+<div class="stg"><b>1. Data Analysis</b>missing values, shpërndarjet, outliers</div>
+<div class="stg"><b>2. Feature Engineering</b>median-impute, moshë shtëpie, log, scaling</div>
+<div class="stg"><b>3. Feature Selection</b>Lasso — zgjedh feature-t më të fortë</div>
+<div class="stg"><b>4. Model Building</b>regresion mbi feature-t e zgjedhura</div>
+<div class="stg"><b>5. Deployment</b>parashikim mbi test.csv</div>
+</div>
+</div>
+
+<footer>Krijuar nga <strong>Erion Nezha</strong> — © 2026</footer>
+<script>
+// Real OLS fit on train.csv (log-transformed target), n=1460, R^2=0.81
+const B=[7.857466,0.480997,0.109214,-0.002515,-0.009098,0.088217];
+const MEDIAN=163000;
+function predict(){
+  const area=+document.getElementById('area').value;
+  const qual=+document.getElementById('qual').value;
+  const year=+document.getElementById('year').value;
+  const rooms=+document.getElementById('rooms').value;
+  const garage=+document.getElementById('garage').value;
+  const age=2010-year; // YrSold - YearBuilt, as in the notebook
+  const lp=B[0]+B[1]*Math.log(area)+B[2]*qual+B[3]*age+B[4]*rooms+B[5]*garage;
+  return {p:Math.exp(lp),area,qual,year,rooms,garage,age};
+}
+function fmt(n){return "$"+Math.round(n).toLocaleString("en-US");}
+function upd(){
+  const d=predict();
+  document.getElementById('v-area').textContent=d.area;
+  document.getElementById('v-qual').textContent=d.qual;
+  document.getElementById('v-year').textContent=d.year;
+  document.getElementById('v-rooms').textContent=d.rooms;
+  document.getElementById('v-garage').textContent=d.garage;
+  document.getElementById('price').textContent=fmt(d.p);
+  const diff=((d.p-MEDIAN)/MEDIAN*100);
+  document.getElementById('detail').innerHTML=
+    "Modeli log-linear: çmimi = e<sup>7.857 + 0.481·ln("+d.area+") + 0.109·"+d.qual+" − 0.0025·"+d.age+" − 0.009·"+d.rooms+" + 0.088·"+d.garage+"</sup><br>"+
+    (diff>=0?"📈 ":"📉 ")+Math.abs(diff).toFixed(1)+"% "+(diff>=0?"mbi":"nën")+" medianën e dataset-it ("+fmt(MEDIAN)+").";
+  draw(d.p);
+}
+function draw(price){
+  const c=document.getElementById('chart'),x=c.getContext('2d');
+  const W=c.width,H=c.height;x.clearRect(0,0,W,H);
+  const max=Math.max(price,MEDIAN)*1.25;
+  const bars=[["Parashikimi yt",price,"#00d4ff"],["Mediana e dataset-it",MEDIAN,"#4ade80"]];
+  x.font="13px Segoe UI";
+  bars.forEach((b,i)=>{
+    const bw=180,bh=(H-90)*b[1]/max,bx=W/2-bw-20+i*(bw+40),by=H-50-bh;
+    const g=x.createLinearGradient(0,by,0,by+bh);g.addColorStop(0,b[2]);g.addColorStop(1,b[2]+"55");
+    x.fillStyle=g;x.fillRect(bx,by,bw,bh);
+    x.fillStyle="#e6e6e6";x.fillText(fmt(b[1]),bx+10,by-8);
+    x.fillStyle="#9fb3c8";x.fillText(b[0],bx+10,H-28);
+  });
+  x.fillStyle="#5c6b7f";x.fillText("Çmimi maksimal i shkallës: "+fmt(max),20,20);
+}
+upd();
+</script>
+</body>
+</html>
